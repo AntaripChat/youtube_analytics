@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Analytics Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #ff0000;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #ff0000;
+            box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 15px;
+            background: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .analyze-btn:hover {
+            background: #cc0000;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 0, 0, 0.2);
+        }
+
+        .analyze-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ff0000;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .channel-card, .video-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border-left: 5px solid #ff0000;
+            margin-bottom: 20px;
+        }
+
+        .channel-header, .video-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .thumbnail {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 20px;
+        }
+
+        .video-thumbnail {
+            width: 120px;
+            height: 90px;
+            border-radius: 10px;
+            object-fit: cover;
+            margin-right: 20px;
+        }
+
+        .title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #ff0000;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .engagement-section, .comments-section, .recent-videos-section {
+            margin-top: 30px;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .comments-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .comment-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ddd;
+        }
+
+        .comment-item.positive { border-left-color: #4CAF50; }
+        .comment-item.negative { border-left-color: #f44336; }
+        .comment-item.neutral { border-left-color: #2196F3; }
+
+        .comment-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .comment-likes {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .comment-text {
+            color: #555;
+            line-height: 1.4;
+        }
+
+        .sentiment-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .sentiment-positive { background: #4CAF50; color: white; }
+        .sentiment-negative { background: #f44336; color: white; }
+        .sentiment-neutral { background: #2196F3; color: white; }
+
+        .video-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .video-item-thumbnail {
+            width: 60px;
+            height: 45px;
+            border-radius: 5px;
+            object-fit: cover;
+            margin-right: 15px;
+        }
+
+        .video-item-info {
+            flex: 1;
+        }
+
+        .video-item-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .video-item-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .examples {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .examples h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .example-list {
+            list-style: none;
+        }
+
+        .example-list li {
+            padding: 8px 0;
+            color: #666;
+            border-bottom: 1px solid #eee;
+        }
+
+        .example-list li:last-child {
+            border-bottom: none;
+        }
+
+        .raw-data {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            border-bottom-color: #ff0000;
+            color: #ff0000;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 YouTube Analytics Pro</h1>
+            <p>Advanced analytics for YouTube channels and videos</p>
+        </div>
+
+        <div class="content">
+            <div class="input-section">
+                <input type="text" 
+                       class="url-input" 
+                       id="youtubeUrl" 
+                       placeholder="Paste YouTube Channel or Video URL here..."
+                       autocomplete="off">
+                <button class="analyze-btn" id="analyzeBtn">Analyze</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Fetching YouTube data...</p>
+            </div>
+
+            <div class="results" id="results">
+                <!-- Results will be populated by JavaScript -->
+            </div>
+
+            <div class="examples">
+                <h3>Supported URL Formats:</h3>
+                <ul class="example-list">
+                    <li>• Channel: youtube.com/channel/UC... </li>
+                    <li>• Channel: youtube.com/c/ChannelName</li>
+                    <li>• Channel: youtube.com/@Username</li>
+                    <li>• Video: youtube.com/watch?v=...</li>
+                    <li>• Video: youtu.be/VIDEO_ID</li>
+                    <li>• Shorts: youtube.com/shorts/...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const youtubeUrl = document.getElementById('youtubeUrl');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+
+            analyzeBtn.addEventListener('click', analyzeURL);
+            youtubeUrl.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    analyzeURL();
+                }
+            });
+
+            function analyzeURL() {
+                const url = youtubeUrl.value.trim();
+                
+                if (!url) {
+                    alert('Please enter a YouTube URL');
+                    return;
+                }
+
+                if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+                    alert('Please enter a valid YouTube URL');
+                    return;
+                }
+
+                loading.style.display = 'block';
+                results.style.display = 'none';
+                analyzeBtn.disabled = true;
+                analyzeBtn.textContent = 'Analyzing...';
+
+                fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    displayResults(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    displayError('An error occurred while fetching data');
+                })
+                .finally(() => {
+                    loading.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = 'Analyze';
+                });
+            }
+
+            function displayResults(data) {
+                results.innerHTML = '';
+
+                if (!data.success) {
+                    displayError(data.error || 'Unknown error occurred');
+                    return;
+                }
+
+                if (data.type === 'channel') {
+                    displayChannelData(data);
+                } else if (data.type === 'video') {
+                    displayVideoData(data);
+                }
+
+                results.style.display = 'block';
+            }
+
+            function displayChannelData(data) {
+                const html = `
+                    <div class="channel-card">
+                        <div class="channel-header">
+                            <img src="${data.thumbnail}" alt="${data.title}" class="thumbnail">
+                            <div>
+                                <div class="title">${data.title}</div>
+                                <div style="color: #666; margin-bottom: 5px;">${data.custom_url || 'No custom URL'}</div>
+                                <div style="color: #888; font-size: 0.9em;">Country: ${data.country} | Created: ${new Date(data.published_at).toLocaleDateString()}</div>
+                                <div style="color: #888; font-size: 0.9em;">${data.description.substring(0, 150)}${data.description.length > 150 ? '...' : ''}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value">${data.subscribers}</div>
+                                <div class="stat-label">Subscribers</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${data.views}</div>
+                                <div class="stat-label">Total Views</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${data.videos}</div>
+                                <div class="stat-label">Videos</div>
+                            </div>
+                        </div>
+
+                        ${data.engagement_metrics ? `
+                        <div class="engagement-section">
+                            <div class="section-title">Engagement Metrics</div>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-value">${data.engagement_metrics.avg_views_per_video}</div>
+                                    <div class="stat-label">Avg Views/Video</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">${data.engagement_metrics.engagement_rate}</div>
+                                    <div class="stat-label">Engagement Rate</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">${data.engagement_metrics.total_recent_likes}</div>
+                                    <div class="stat-label">Recent Likes</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">${data.engagement_metrics.total_recent_comments}</div>
+                                    <div class="stat-label">Recent Comments</div>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${data.recent_videos && data.recent_videos.length > 0 ? `
+                        <div class="recent-videos-section">
+                            <div class="section-title">Recent Videos</div>
+                            ${data.recent_videos.map(video => `
+                                <div class="video-item">
+                                    <div class="video-item-info">
+                                        <div class="video-item-title">${video.title}</div>
+                                        <div class="video-item-stats">
+                                            <span>Views: ${video.raw_data.views}</span>
+                                            <span>Likes: ${video.raw_data.likes}</span>
+                                            <span>Comments: ${video.raw_data.comments}</span>
+                                            <span>Published: ${new Date(video.published_at).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : ''}
+
+                        <button onclick="toggleRawData(this)" style="margin-top: 15px; background: none; border: 1px solid #ddd; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                            Show Raw Data
+                        </button>
+                        <div class="raw-data">${JSON.stringify(data.raw_data, null, 2)}</div>
+                    </div>
+                `;
+                results.innerHTML = html;
+            }
+
+            function displayVideoData(data) {
+                const duration = formatDuration(data.duration);
+                const tabsHtml = `
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchTab(this, 'overview')">Overview</div>
+                        <div class="tab" onclick="switchTab(this, 'engagement')">Engagement</div>
+                        <div class="tab" onclick="switchTab(this, 'comments')">Comments (${data.comments_data.length})</div>
+                    </div>
+                    
+                    <div id="overview" class="tab-content active">
+                        <div class="video-header">
+                            <img src="${data.thumbnail}" alt="${data.title}" class="video-thumbnail">
+                            <div>
+                                <div class="title">${data.title}</div>
+                                <div style="color: #666; margin-bottom: 5px;">by ${data.channel_title}</div>
+                                <div style="color: #888; font-size: 0.9em;">Published: ${new Date(data.published_at).toLocaleDateString()}</div>
+                                <div style="color: #888; font-size: 0.9em;">Duration: ${duration}</div>
+                                ${data.tags && data.tags.length > 0 ? `
+                                <div style="color: #888; font-size: 0.9em; margin-top: 5px;">
+                                    Tags: ${data.tags.slice(0, 5).join(', ')}${data.tags.length > 5 ? '...' : ''}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value">${data.views}</div>
+                                <div class="stat-label">Views</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${data.likes}</div>
+                                <div class="stat-label">Likes</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${data.comments}</div>
+                                <div class="stat-label">Comments</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="engagement" class="tab-content">
+                        <div class="engagement-section">
+                            <div class="section-title">Engagement Analysis</div>
+                            ${data.engagement_metrics ? `
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-value">${data.engagement_metrics.like_ratio}</div>
+                                    <div class="stat-label">Like Ratio</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">${data.engagement_metrics.comment_ratio}</div>
+                                    <div class="stat-label">Comment Ratio</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">${data.engagement_metrics.total_engagement}</div>
+                                    <div class="stat-label">Total Engagement</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">${data.engagement_metrics.likes_per_view}</div>
+                                    <div class="stat-label">Likes per View</div>
+                                </div>
+                            </div>
+                            ` : 'No engagement data available'}
+                        </div>
+                    </div>
+
+                    <div id="comments" class="tab-content">
+                        <div class="comments-section">
+                            <div class="section-title">Recent Comments</div>
+                            <div class="comments-list">
+                                ${data.comments_data.length > 0 ? data.comments_data.map(comment => `
+                                    <div class="comment-item ${comment.sentiment}">
+                                        <div class="comment-header">
+                                            <div>
+                                                <span class="comment-author">${comment.author}</span>
+                                                <span class="sentiment-badge sentiment-${comment.sentiment}">${comment.sentiment}</span>
+                                            </div>
+                                            <div class="comment-likes">${comment.likes} likes</div>
+                                        </div>
+                                        <div class="comment-text">${comment.text}</div>
+                                        <div style="color: #888; font-size: 0.8em; margin-top: 5px;">
+                                            ${new Date(comment.published_at).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                `).join('') : '<p>No comments available</p>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const html = `
+                    <div class="video-card">
+                        ${tabsHtml}
+                        
+                        <button onclick="toggleRawData(this)" style="margin-top: 15px; background: none; border: 1px solid #ddd; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                            Show Raw Data
+                        </button>
+                        <div class="raw-data">${JSON.stringify(data.raw_data, null, 2)}</div>
+                    </div>
+                `;
+                results.innerHTML = html;
+            }
+
+            function displayError(message) {
+                results.innerHTML = `
+                    <div class="error">
+                        <strong>Error:</strong> ${message}
+                    </div>
+                `;
+                results.style.display = 'block';
+            }
+
+            function formatDuration(duration) {
+                // Remove PT prefix
+                duration = duration.replace('PT', '');
+                let result = '';
+                
+                if (duration.includes('H')) {
+                    const hours = duration.split('H')[0];
+                    result += hours + ':';
+                    duration = duration.split('H')[1];
+                }
+                
+                if (duration.includes('M')) {
+                    const minutes = duration.split('M')[0];
+                    result += minutes.padStart(2, '0') + ':';
+                    duration = duration.split('M')[1];
+                } else {
+                    result += '00:';
+                }
+                
+                if (duration.includes('S')) {
+                    const seconds = duration.split('S')[0];
+                    result += seconds.padStart(2, '0');
+                } else {
+                    result += '00';
+                }
+                
+                return result;
+            }
+        });
+
+        function switchTab(tabElement, tabId) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Add active class to clicked tab
+            tabElement.classList.add('active');
+            
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function toggleRawData(button) {
+            const rawData = button.nextElementSibling;
+            if (rawData.style.display === 'none' || !rawData.style.display) {
+                rawData.style.display = 'block';
+                button.textContent = 'Hide Raw Data';
+            } else {
+                rawData.style.display = 'none';
+                button.textContent = 'Show Raw Data';
+            }
+        }
+    </script>
+</body>
+</html>
